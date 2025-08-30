@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/thanhfphan/kart-challenge/app/delivery/http/openapi"
 	"github.com/thanhfphan/kart-challenge/app/usecases"
 	"github.com/thanhfphan/kart-challenge/config"
 	"github.com/thanhfphan/kart-challenge/pkg/middleware"
@@ -24,13 +25,13 @@ type App interface {
 type app struct {
 	cfg *config.Config
 
-	productUC usecases.Product
+	ucs usecases.UseCase
 }
 
 func New(cfg *config.Config, ucs usecases.UseCase) (App, error) {
 	return &app{
-		cfg:       cfg,
-		productUC: ucs.Product(),
+		cfg: cfg,
+		ucs: ucs,
 	}, nil
 }
 
@@ -73,8 +74,9 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 	r.GET("/health-check", pingHandler)
 	r.HEAD("/health-check", pingHandler)
 
-	group := r.Group("api")
-	group.GET("/product", a.handleGetProduct())
+	openAPIServer := NewOpenAPIServer(a.ucs)
+	apiGroup := r.Group("api")
+	openapi.RegisterHandlers(apiGroup, openAPIServer)
 
 	return r
 }

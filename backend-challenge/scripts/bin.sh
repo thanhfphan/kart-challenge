@@ -19,6 +19,7 @@ function help() {
   echo 1>&2 "  tests        run unit test"
   echo 1>&2 "  lint         check lint"
   echo 1>&2 "  migrate		  run migration"
+  echo 1>&2 "  generate     generate code from OpenAPI spec"
 }
 
 function setup_env() {
@@ -59,6 +60,18 @@ function lint() {
     # Add linter logic here
 }
 
+function generate() {
+    echo "Generating code from OpenAPI specification..."
+
+    # Create output directory if it doesn't exist
+    mkdir -p app/delivery/http/openapi
+
+    # Generate server code using oapi-codegen
+    oapi-codegen --config=oapi-codegen.yaml openapi.yaml
+
+    echo "Code generation completed successfully!"
+}
+
 SUBCOMMAND="${1:-}"
 case "${SUBCOMMAND}" in
   "" | "help" | "-h" | "--help" )
@@ -94,7 +107,12 @@ case "${SUBCOMMAND}" in
     shift
     migrate "$@"
     ;;
-  
+
+  "generate" )
+    shift
+    generate "$@"
+    ;;
+
   *)
     help
     exit 1
