@@ -14,6 +14,7 @@ var _ Product = (*product)(nil)
 
 type Product interface {
 	Get(ctx context.Context, id int64) (*models.Product, error)
+	List(ctx context.Context) ([]*models.Product, error)
 }
 
 type product struct {
@@ -42,4 +43,18 @@ func (u *product) Get(ctx context.Context, id int64) (*models.Product, error) {
 	}
 
 	return product, nil
+}
+
+func (u *product) List(ctx context.Context) ([]*models.Product, error) {
+	log := logging.FromContext(ctx)
+	log.Info("Listing all products")
+
+	products, err := u.productRepo.List(ctx)
+	if err != nil {
+		log.Errorf("List products err=%v", err)
+		return nil, err
+	}
+
+	log.Infof("Found %d products", len(products))
+	return products, nil
 }

@@ -48,6 +48,15 @@ func (r *product) GetByID(ctx context.Context, id int64) (*models.Product, error
 	return record, nil
 }
 
+func (r *product) List(ctx context.Context) ([]*models.Product, error) {
+	products, err := r.productSQL.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
 func (r *product) Create(ctx context.Context, record *models.Product) (*models.Product, error) {
 	log := logging.FromContext(ctx)
 
@@ -109,7 +118,7 @@ func (r *productSQL) UpdateWithMap(ctx context.Context, record *models.Product, 
 }
 
 func (r *productSQL) GetByID(ctx context.Context, orderID int64) (*models.Product, error) {
-	var record *models.Product
+	var record models.Product
 	err := r.dbWithContext(ctx).Where("id = ?", orderID).First(&record).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -118,12 +127,22 @@ func (r *productSQL) GetByID(ctx context.Context, orderID int64) (*models.Produc
 		return nil, err
 	}
 
-	return record, nil
+	return &record, nil
 }
 
 func (r *productSQL) GetByIDList(ctx context.Context, ids []int64) ([]*models.Product, error) {
 	var records []*models.Product
 	err := r.dbWithContext(ctx).Where("id IN (?)", ids).Find(&records).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func (r *productSQL) List(ctx context.Context) ([]*models.Product, error) {
+	var records []*models.Product
+	err := r.dbWithContext(ctx).Find(&records).Error
 	if err != nil {
 		return nil, err
 	}

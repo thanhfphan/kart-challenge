@@ -12,11 +12,32 @@ import (
 type Repo interface {
 	WithTransaction(ctx context.Context, fn func(Repo) error) error
 	Product() Product
+	Order() Order
+	OrderItem() OrderItem
+	PromoCode() PromoCode
 }
 
 type Product interface {
 	GetByID(ctx context.Context, id int64) (*models.Product, error)
+	List(ctx context.Context) ([]*models.Product, error)
 	Create(ctx context.Context, record *models.Product) (*models.Product, error)
 	UpdateWithMap(ctx context.Context, record *models.Product, params map[string]interface{}) error
 	GetByIDList(ctx context.Context, ids []int64) ([]*models.Product, error)
+}
+
+type Order interface {
+	GetByID(ctx context.Context, id string) (*models.Order, error)
+	Create(ctx context.Context, record *models.Order) (*models.Order, error)
+	UpdateWithMap(ctx context.Context, record *models.Order, params map[string]interface{}) error
+}
+
+type OrderItem interface {
+	Create(ctx context.Context, record *models.OrderItem) (*models.OrderItem, error)
+	CreateMany(ctx context.Context, records []*models.OrderItem) error
+	GetByOrderID(ctx context.Context, orderID string) ([]*models.OrderItem, error)
+	GetByID(ctx context.Context, id int64) (*models.OrderItem, error)
+}
+
+type PromoCode interface {
+	GetByCode(ctx context.Context, code string) (*models.PromoCode, error)
 }

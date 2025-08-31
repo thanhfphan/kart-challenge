@@ -17,7 +17,10 @@ type repo struct {
 	db  *gorm.DB
 	env *env.Env
 
-	product Product
+	product   Product
+	order     Order
+	orderItem OrderItem
+	promoCode PromoCode
 }
 
 // New returns new instance of Repo
@@ -28,7 +31,10 @@ func New(cfg *config.Config, env *env.Env, db *gorm.DB) Repo {
 		db:  db,
 		env: env,
 
-		product: newProduct(env.RedisClient(), db),
+		product:   newProduct(env.RedisClient(), db),
+		order:     newOrder(env.RedisClient(), db),
+		orderItem: newOrderItem(env.RedisClient(), db),
+		promoCode: newPromoCode(env.RedisClient(), db),
 	}
 }
 
@@ -69,4 +75,16 @@ func (r *repo) WithTransaction(ctx context.Context, fn func(Repo) error) (err er
 
 func (r *repo) Product() Product {
 	return r.product
+}
+
+func (r *repo) Order() Order {
+	return r.order
+}
+
+func (r *repo) OrderItem() OrderItem {
+	return r.orderItem
+}
+
+func (r *repo) PromoCode() PromoCode {
+	return r.promoCode
 }

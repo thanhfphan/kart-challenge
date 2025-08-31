@@ -12,12 +12,12 @@ var _ UseCase = (*useCase)(nil)
 
 type UseCase interface {
 	Product() Product
-	Hello() Hello
+	Order() Order
 }
 
 type useCase struct {
 	product Product
-	hello   Hello
+	order   Order
 }
 
 func New(cfg *config.Config, env *env.Env, repos repos.Repo) (UseCase, error) {
@@ -25,14 +25,15 @@ func New(cfg *config.Config, env *env.Env, repos repos.Repo) (UseCase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new product failed err=%w", err)
 	}
-	hello, err := newHello(cfg, env, repos)
+
+	order, err := newOrder(cfg, env, repos)
 	if err != nil {
-		return nil, fmt.Errorf("new hello failed err=%w", err)
+		return nil, fmt.Errorf("new order failed err=%w", err)
 	}
 
 	return &useCase{
 		product: product,
-		hello:   hello,
+		order:   order,
 	}, nil
 }
 
@@ -40,6 +41,6 @@ func (u *useCase) Product() Product {
 	return u.product
 }
 
-func (u *useCase) Hello() Hello {
-	return u.hello
+func (u *useCase) Order() Order {
+	return u.order
 }
