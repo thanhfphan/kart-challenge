@@ -75,7 +75,7 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 	r.GET("/health-check", pingHandler)
 	r.HEAD("/health-check", pingHandler)
 
-	openAPIServer := NewOpenAPIServer(a.ucs)
+	openAPIServer := NewOpenAPIServer(a.cfg, a.ucs)
 	apiGroup := r.Group("api")
 	openapi.RegisterHandlers(apiGroup, openAPIServer)
 

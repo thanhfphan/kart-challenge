@@ -7,8 +7,13 @@ type Config struct {
 	ServiceVersion string `env:"SERVICE_VERSION"`
 	HTTPPort       int    `env:"HTTP_PORT"`
 	MetricPort     int    `env:"METRIC_PORT"`
+	Security       *Security
 	DB             *DB
 	Redis          *Redis
+}
+
+type Security struct {
+	APIKey string `env:"API_KEY"`
 }
 
 type DB struct {
