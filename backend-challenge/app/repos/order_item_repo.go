@@ -82,10 +82,12 @@ func (r *orderItem) CreateMany(ctx context.Context, records []*models.OrderItem)
 		return err
 	}
 
-	for _, record := range records {
-		if err := r.cache.Create(ctx, record); err != nil {
-			log.Warnf("create cache key=%s err=%v", record.CacheKey(), err)
-		}
+	items := make([]cache.Item, len(records))
+	for i, record := range records {
+		items[i] = record
+	}
+	if err := r.cache.CreateList(ctx, items); err != nil {
+		log.Warnf("create cache list err=%v", err)
 	}
 
 	return nil

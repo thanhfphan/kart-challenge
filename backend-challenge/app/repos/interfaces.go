@@ -39,5 +39,5 @@ type OrderItem interface {
 }
 
 type PromoCode interface {
-	GetByCode(ctx context.Context, code string) (*models.PromoCode, error)
+	ValidateCode(ctx context.Context, code string) (bool, error)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Order struct {
@@ -25,7 +26,8 @@ func (o *Order) CacheKey() string {
 	return fmt.Sprintf("orders:%s", o.ID)
 }
 
-func (o *Order) BeforeCreate() error {
+// BeforeCreate will be called before creating a new order
+func (o *Order) BeforeCreate(db *gorm.DB) error {
 	if o.ID == "" {
 		o.ID = uuid.New().String()
 	}
