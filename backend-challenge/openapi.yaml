@@ -14,7 +14,8 @@ externalDocs:
   description: Find out more about the challenge
   url: http://swagger.io
 servers:
-  - url: https://orderfoodonline.deno.dev/api
+  - url: /api
+    description: The current server
 tags:
   - name: product
     description: Everything about products

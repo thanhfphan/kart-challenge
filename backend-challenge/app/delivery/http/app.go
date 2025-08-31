@@ -78,5 +78,10 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 	apiGroup := r.Group("api")
 	openapi.RegisterHandlers(apiGroup, openAPIServer)
 
+	// Documentation routes
+	docsHandler := NewDocsHandler()
+	r.GET("/api-docs", docsHandler.ServeDocumentation)
+	r.GET("/openapi.json", docsHandler.ServeOpenAPISpec)
+
 	return r
 }
