@@ -7,6 +7,7 @@ import (
 	"github.com/thanhfphan/kart-challenge/app/delivery/http/openapi"
 	"github.com/thanhfphan/kart-challenge/app/usecases"
 	"github.com/thanhfphan/kart-challenge/config"
+	"github.com/thanhfphan/kart-challenge/pkg/logging"
 	"github.com/thanhfphan/kart-challenge/pkg/middleware"
 
 	"github.com/gin-contrib/cors"
@@ -43,12 +44,8 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 
 	// middlewares
 	r.Use(gin.Recovery())
+	r.Use(middleware.Logger())
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
-	r.Use(middleware.SetRequestID())
-	r.Use(middleware.SetLogger())
-	r.Use(middleware.GinRequestProfiler(a.cfg.ServiceName))
-	r.Use(middleware.SetupAppContext())
-	r.Use(middleware.SetCommonData())
 
 	// cors
 	corsConfig := cors.DefaultConfig()
@@ -64,6 +61,10 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 
 	// health check
 	pingHandler := func(ctx *gin.Context) {
+		// Demonstrate using the logger from context
+		logger := logging.FromContext(ctx.Request.Context())
+		logger.Info("Health check endpoint accessed")
+
 		ctx.JSON(http.StatusOK, gin.H{
 			"data": gin.H{
 				"version": a.cfg.ServiceVersion,
