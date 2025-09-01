@@ -44,8 +44,9 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 
 	// middlewares
 	r.Use(gin.Recovery())
-	r.Use(middleware.Logger())
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	r.Use(middleware.Logger())
+	// TODO: add more middlewares like rate limit, tracing, etc...
 
 	// cors
 	corsConfig := cors.DefaultConfig()

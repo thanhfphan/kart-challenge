@@ -15,6 +15,7 @@ type Repo interface {
 	Order() Order
 	OrderItem() OrderItem
 	PromoCode() PromoCode
+	Outbox() Outbox
 }
 
 type Product interface {
@@ -42,4 +43,13 @@ type PromoCode interface {
 	GetCode(ctx context.Context, code string) (*models.PromoCode, error)
 	BulkUpsert(ctx context.Context, promoCodes []*models.PromoCode) error
 	UpdateWithMap(ctx context.Context, record *models.PromoCode, params map[string]interface{}) error
+}
+
+type Outbox interface {
+	Create(ctx context.Context, record *models.OutboxEvent) (*models.OutboxEvent, error)
+	GetByID(ctx context.Context, id int64) (*models.OutboxEvent, error)
+	GetUnprocessedEvents(ctx context.Context, limit int) ([]*models.OutboxEvent, error)
+	MarkAsProcessed(ctx context.Context, id int64) error
+	MarkAsFailed(ctx context.Context, id int64) error
+	UpdateWithMap(ctx context.Context, record *models.OutboxEvent, params map[string]interface{}) error
 }

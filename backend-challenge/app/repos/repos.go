@@ -21,6 +21,7 @@ type repo struct {
 	order     Order
 	orderItem OrderItem
 	promoCode PromoCode
+	outbox    Outbox
 }
 
 // New returns new instance of Repo
@@ -35,6 +36,7 @@ func New(cfg *config.Config, env *env.Env, db *gorm.DB) Repo {
 		order:     newOrder(env.RedisClient(), db),
 		orderItem: newOrderItem(env.RedisClient(), db),
 		promoCode: newPromoCode(env.RedisClient(), db),
+		outbox:    newOutbox(env.RedisClient(), db),
 	}
 }
 
@@ -87,4 +89,8 @@ func (r *repo) OrderItem() OrderItem {
 
 func (r *repo) PromoCode() PromoCode {
 	return r.promoCode
+}
+
+func (r *repo) Outbox() Outbox {
+	return r.outbox
 }

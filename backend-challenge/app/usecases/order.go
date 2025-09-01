@@ -29,6 +29,7 @@ type order struct {
 	orderItemRepo repos.OrderItem
 	productRepo   repos.Product
 	promoCodeRepo repos.PromoCode
+	outboxRepo    repos.Outbox
 }
 
 func newOrder(cfg *config.Config, env *env.Env, repos repos.Repo) (Order, error) {
@@ -40,6 +41,7 @@ func newOrder(cfg *config.Config, env *env.Env, repos repos.Repo) (Order, error)
 		orderItemRepo: repos.OrderItem(),
 		productRepo:   repos.Product(),
 		promoCodeRepo: repos.PromoCode(),
+		outboxRepo:    repos.Outbox(),
 	}, nil
 }
 
@@ -148,6 +150,16 @@ func (u *order) PlaceOrder(ctx context.Context, req *dto.OrderRequest) (*dto.Ord
 		err = tx.OrderItem().CreateMany(ctx, orderItems)
 		if err != nil {
 			return err
+		}
+
+		outboxEvent, err := models.CreateOrderPlacedEvent(createdOrder, orderItems, products)
+		if err != nil {
+			return fmt.Errorf("failed to create order placed event: %w", err)
+		}
+
+		_, err = tx.Outbox().Create(ctx, outboxEvent)
+		if err != nil {
+			return fmt.Errorf("failed to save outbox event: %w", err)
 		}
 
 		if coupon != nil {
