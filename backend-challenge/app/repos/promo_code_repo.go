@@ -113,6 +113,7 @@ func (r *promoCodeSQL) BulkUpsert(ctx context.Context, promoCodes []*models.Prom
 		DoUpdates: clause.AssignmentColumns([]string{
 			"description",
 			"discount_pct",
+			"is_active",
 			"updated_at",
 		}),
 	}).CreateInBatches(promoCodes, 1000) // Process in batches of 1000

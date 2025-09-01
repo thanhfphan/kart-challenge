@@ -71,7 +71,7 @@ func recFromBytes(data []byte) (types.Rec, error) {
 }
 
 // ExternalSortPairs sorts and deduplicates a pairs file using external sorting.
-func ExternalSortPairs(inputPath, outputPath string, chunkLimit int) error {
+func ExternalSortPairs(ctx context.Context, inputPath, outputPath string, chunkLimit int) error {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
@@ -110,7 +110,7 @@ func ExternalSortPairs(inputPath, outputPath string, chunkLimit int) error {
 		config,
 	)
 
-	go sorter.Sort(context.Background())
+	go sorter.Sort(ctx)
 
 	outputFile, err := os.Create(outputPath)
 	if err != nil {

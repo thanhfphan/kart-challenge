@@ -151,13 +151,14 @@ func (u *order) PlaceOrder(ctx context.Context, req *dto.OrderRequest) (*dto.Ord
 		}
 
 		if coupon != nil {
-			err = tx.PromoCode().UpdateWithMap(ctx, coupon, map[string]interface{}{
-				// TODO: Use pessimistic lock to avoid concurrent use of the same coupon
-				"is_active": false, // Deactivate the coupon after use
-			})
-			if err != nil {
-				return err
-			}
+			// If we want to deactivate the coupon after use, we can do it here
+			// err = tx.PromoCode().UpdateWithMap(ctx, coupon, map[string]interface{}{
+			// 	// TODO: Use pessimistic lock to avoid concurrent use of the same coupon
+			// 	"is_active": false, // Deactivate the coupon after use
+			// })
+			// if err != nil {
+			// 	return err
+			// }
 		}
 
 		return nil

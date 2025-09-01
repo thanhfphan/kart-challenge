@@ -84,7 +84,7 @@ func realMain(ctx context.Context) error {
 	// Sort each
 	for i := range pairsFiles {
 		log.Infof("Sorting %s...", pairsFiles[i])
-		if err := sorter.ExternalSortPairs(pairsFiles[i], sortedPairsFiles[i], chunkLimit); err != nil {
+		if err := sorter.ExternalSortPairs(ctx, pairsFiles[i], sortedPairsFiles[i], chunkLimit); err != nil {
 			return err
 		}
 	}

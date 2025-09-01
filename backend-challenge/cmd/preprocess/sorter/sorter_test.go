@@ -2,6 +2,7 @@ package sorter
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,7 +49,7 @@ func TestExternalSortPairs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test the ExternalSortPairs function
-	err = ExternalSortPairs(inputPath, outputPath, 1000)
+	err = ExternalSortPairs(context.Background(), inputPath, outputPath, 1000)
 	require.NoError(t, err)
 
 	// Read and verify the output
@@ -121,7 +122,7 @@ func TestExternalSortPairsWithSmallChunkSize(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with small chunk size (10 records per chunk)
-	err = ExternalSortPairs(inputPath, outputPath, 10)
+	err = ExternalSortPairs(context.Background(), inputPath, outputPath, 10)
 	require.NoError(t, err)
 
 	// Verify output exists and is not empty
@@ -146,7 +147,7 @@ func TestExternalSortPairsEmptyFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test sorting empty file
-	err = ExternalSortPairs(inputPath, outputPath, 1000)
+	err = ExternalSortPairs(context.Background(), inputPath, outputPath, 1000)
 	require.NoError(t, err)
 
 	// Verify output file exists and is empty
