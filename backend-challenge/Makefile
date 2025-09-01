@@ -18,6 +18,11 @@ migrate:
 	@./scripts/bin.sh migrate
 .PHONY: migrate
 
+preprocess:
+	@echo "Running promo code preprocessing pipeline..."
+	@go run cmd/preprocess/main.go -output_dir=data
+.PHONY: preprocess
+
 help:
 	@./scripts/bin.sh help
 .PHONY: help
