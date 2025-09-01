@@ -13,11 +13,13 @@ var _ UseCase = (*useCase)(nil)
 type UseCase interface {
 	Product() Product
 	Order() Order
+	PromoCode() PromoCode
 }
 
 type useCase struct {
-	product Product
-	order   Order
+	product   Product
+	order     Order
+	promoCode PromoCode
 }
 
 func New(cfg *config.Config, env *env.Env, repos repos.Repo) (UseCase, error) {
@@ -31,9 +33,15 @@ func New(cfg *config.Config, env *env.Env, repos repos.Repo) (UseCase, error) {
 		return nil, fmt.Errorf("new order failed err=%w", err)
 	}
 
+	promoCode, err := newPromoCode(cfg, env, repos)
+	if err != nil {
+		return nil, fmt.Errorf("new promo code failed err=%w", err)
+	}
+
 	return &useCase{
-		product: product,
-		order:   order,
+		product:   product,
+		order:     order,
+		promoCode: promoCode,
 	}, nil
 }
 
@@ -43,4 +51,8 @@ func (u *useCase) Product() Product {
 
 func (u *useCase) Order() Order {
 	return u.order
+}
+
+func (u *useCase) PromoCode() PromoCode {
+	return u.promoCode
 }

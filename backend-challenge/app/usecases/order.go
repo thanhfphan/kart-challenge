@@ -109,19 +109,21 @@ func (u *order) PlaceOrder(ctx context.Context, req *dto.OrderRequest) (*dto.Ord
 		finalTotal   float64
 		discount     float64
 		createdOrder *models.Order
+		coupon       *models.PromoCode
 	)
 
 	if req.CouponCode != "" {
-		valid, err := u.promoCodeRepo.ValidateCode(ctx, req.CouponCode)
+		coupon, err = u.promoCodeRepo.GetCode(ctx, req.CouponCode)
 		if err != nil {
-			log.Errorf("Failed to validate promo code: %v", err)
-			return nil, fmt.Errorf("failed to validate promo code: %w", err)
-		}
-		if !valid {
-			return nil, fmt.Errorf("invalid promo code: %s", req.CouponCode)
+			log.Errorf("Failed to get promo code: %v", err)
+			return nil, fmt.Errorf("failed to get promo code: %w", err)
 		}
 
-		// TODO: calculate discount
+		if !coupon.IsActive {
+			return nil, fmt.Errorf("promo code is not active")
+		}
+
+		discount = total * coupon.DiscountPct / 100
 	}
 
 	finalTotal = total - discount
@@ -146,6 +148,16 @@ func (u *order) PlaceOrder(ctx context.Context, req *dto.OrderRequest) (*dto.Ord
 		err = tx.OrderItem().CreateMany(ctx, orderItems)
 		if err != nil {
 			return err
+		}
+
+		if coupon != nil {
+			err = tx.PromoCode().UpdateWithMap(ctx, coupon, map[string]interface{}{
+				// TODO: Use pessimistic lock to avoid concurrent use of the same coupon
+				"is_active": false, // Deactivate the coupon after use
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

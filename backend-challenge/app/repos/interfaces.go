@@ -39,5 +39,7 @@ type OrderItem interface {
 }
 
 type PromoCode interface {
-	ValidateCode(ctx context.Context, code string) (bool, error)
+	GetCode(ctx context.Context, code string) (*models.PromoCode, error)
+	BulkUpsert(ctx context.Context, promoCodes []*models.PromoCode) error
+	UpdateWithMap(ctx context.Context, record *models.PromoCode, params map[string]interface{}) error
 }

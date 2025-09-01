@@ -19,8 +19,7 @@ migrate:
 .PHONY: migrate
 
 preprocess:
-	@echo "Running promo code preprocessing pipeline..."
-	@go run cmd/preprocess/main.go -output_dir=data
+	@./scripts/bin.sh preprocess
 .PHONY: preprocess
 
 help:

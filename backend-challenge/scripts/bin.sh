@@ -20,6 +20,7 @@ function help() {
   echo 1>&2 "  lint         check lint"
   echo 1>&2 "  migrate		  run migration"
   echo 1>&2 "  generate     generate code from OpenAPI spec"
+  echo 1>&2 "  preprocess   preprocess coupon data"
 }
 
 function setup_env() {
@@ -72,6 +73,11 @@ function generate() {
     echo "Code generation completed successfully!"
 }
 
+function preprocess() {
+  setup_env
+  go run ./cmd/preprocess/main.go -output_dir=data
+}
+
 SUBCOMMAND="${1:-}"
 case "${SUBCOMMAND}" in
   "" | "help" | "-h" | "--help" )
@@ -111,6 +117,11 @@ case "${SUBCOMMAND}" in
   "generate" )
     shift
     generate "$@"
+    ;;
+  
+  "preprocess" )
+    shift
+    preprocess "$@"
     ;;
 
   *)
