@@ -2,158 +2,142 @@ package sorter
 
 import (
 	"bufio"
+	"context"
+	"encoding/binary"
 	"fmt"
 	"os"
-	"sort"
 
+	"github.com/lanrat/extsort"
 	"github.com/thanhfphan/kart-challenge/cmd/preprocess/types"
 	"github.com/thanhfphan/kart-challenge/cmd/preprocess/utils"
 )
 
-// RecLess compares two records.
-func RecLess(a, b types.Rec) bool {
+// compareRec implements the CompareGeneric interface for external sorting
+func compareRec(a, b types.Rec) int {
 	if a.H != b.H {
-		return a.H < b.H
+		if a.H < b.H {
+			return -1
+		}
+		return 1
 	}
-	return a.Code < b.Code
+	if a.Code != b.Code {
+		if a.Code < b.Code {
+			return -1
+		}
+		return 1
+	}
+	return 0
 }
 
-// ExternalSortPairs sorts and deduplicates a pairs file.
+// recToBytes serializes a types.Rec to bytes for external sorting
+func recToBytes(rec types.Rec) ([]byte, error) {
+	// Calculate total size: 8 bytes for hash + 2 bytes for length + string length
+	totalSize := 8 + 2 + len(rec.Code)
+	buf := make([]byte, totalSize)
+
+	// Write hash (8 bytes)
+	binary.LittleEndian.PutUint64(buf[0:8], rec.H)
+
+	// Write string length (2 bytes)
+	binary.LittleEndian.PutUint16(buf[8:10], uint16(len(rec.Code)))
+
+	// Write string data
+	copy(buf[10:], []byte(rec.Code))
+
+	return buf, nil
+}
+
+// recFromBytes deserializes bytes back to types.Rec for external sorting
+func recFromBytes(data []byte) (types.Rec, error) {
+	if len(data) < 10 {
+		return types.Rec{}, fmt.Errorf("invalid data length: %d, expected at least 10 bytes", len(data))
+	}
+
+	// Read hash (8 bytes)
+	h := binary.LittleEndian.Uint64(data[0:8])
+
+	// Read string length (2 bytes)
+	strLen := binary.LittleEndian.Uint16(data[8:10])
+
+	// Validate remaining data length
+	if len(data) != 10+int(strLen) {
+		return types.Rec{}, fmt.Errorf("invalid data length: %d, expected %d", len(data), 10+int(strLen))
+	}
+
+	// Read string data
+	code := string(data[10:])
+
+	return types.Rec{H: h, Code: code}, nil
+}
+
+// ExternalSortPairs sorts and deduplicates a pairs file using external sorting.
 func ExternalSortPairs(inputPath, outputPath string, chunkLimit int) error {
-	runs, err := createSortedRuns(inputPath, chunkLimit)
+	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open input file: %w", err)
 	}
-	return mergeRunsByHashCode(runs, outputPath)
-}
+	defer inputFile.Close()
 
-// createSortedRuns creates sorted runs from the input file.
-// chunkLimit is the maximum number of records in a chunk.
-func createSortedRuns(input string, chunkLimit int) ([]string, error) {
-	f, err := os.Open(input)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	br := bufio.NewReader(f)
-	var runs []string
-	for {
-		buf := make([]types.Rec, 0, chunkLimit)
-		for len(buf) < chunkLimit {
-			r, ok, err := utils.ReadPair(br)
+	inputChan := make(chan types.Rec, 100)
+
+	go func() {
+		defer close(inputChan)
+		br := bufio.NewReader(inputFile)
+		for {
+			rec, ok, err := utils.ReadPair(br)
 			if err != nil {
-				return nil, err
+				fmt.Println("Error reading pair: ", err)
+				return
 			}
 			if !ok {
 				break
 			}
-			buf = append(buf, r)
-		}
-		if len(buf) == 0 {
-			break
-		}
-		sort.Slice(buf, func(i, j int) bool { return RecLess(buf[i], buf[j]) })
-		// Dedupe in chunk
-		w := 0
-		for i := range buf {
-			if i == 0 || buf[i].H != buf[i-1].H || buf[i].Code != buf[i-1].Code {
-				buf[w] = buf[i]
-				w++
-			}
-		}
-		buf = buf[:w]
-		run := fmt.Sprintf("%s.run.%06d", input, len(runs))
-		rf, err := os.Create(run)
-		if err != nil {
-			return nil, err
-		}
-		bw := bufio.NewWriter(rf)
-		for _, r := range buf {
-			if err := utils.WriteRec(bw, r); err != nil {
-				rf.Close()
-				return nil, err
-			}
-		}
-		if err := bw.Flush(); err != nil {
-			rf.Close()
-			return nil, err
-		}
-		if err := rf.Close(); err != nil {
-			return nil, err
-		}
-		runs = append(runs, run)
-	}
-	return runs, nil
-}
-
-func mergeRunsByHashCode(runs []string, outFile string) error {
-	if len(runs) == 0 {
-		// no data
-		f, _ := os.Create(outFile)
-		f.Close()
-		return nil
-	}
-
-	// open all runs
-	readers := make([]*utils.Reader, 0, len(runs))
-	files := make([]*os.File, 0, len(runs))
-	for _, rn := range runs {
-		rr, f, err := utils.NewReader(rn)
-		if err != nil {
-			return err
-		}
-		readers = append(readers, rr)
-		files = append(files, f)
-	}
-	defer func() {
-		for _, f := range files {
-			_ = f.Close()
-			_ = os.Remove(f.Name())
+			inputChan <- rec
 		}
 	}()
 
-	out, err := os.Create(outFile)
-	if err != nil {
-		return err
+	config := &extsort.Config{
+		NumWorkers:         2,
+		ChanBuffSize:       10,
+		SortedChanBuffSize: 1000,
 	}
-	defer out.Close()
-	bw := bufio.NewWriter(out)
+
+	sorter, outputChan, errChan := extsort.Generic(
+		inputChan,
+		recFromBytes,
+		recToBytes,
+		compareRec,
+		config,
+	)
+
+	go sorter.Sort(context.Background())
+
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer outputFile.Close()
+
+	bw := bufio.NewWriter(outputFile)
 	defer bw.Flush()
 
-	var have bool
-	var last types.Rec
+	var lastRec types.Rec
+	var hasLast bool
 
-	for {
-		// pick min among readers
-		var mi int = -1
-		for i, rr := range readers {
-			if rr.Has() {
-				if mi == -1 || utils.RecLess(rr.Peek(), readers[mi].Peek()) {
-					mi = i
-				}
+	for rec := range outputChan {
+		// Deduplicate: only write if different from last record
+		if !hasLast || rec.H != lastRec.H || rec.Code != lastRec.Code {
+			if err := utils.WriteRec(bw, rec); err != nil {
+				return fmt.Errorf("failed to write record: %w", err)
 			}
-		}
-		if mi == -1 {
-			break
-		} // all done
-
-		m := readers[mi].Peek()
-		readers[mi].Pop()
-
-		// dedupe across runs
-		if !have || m.H != last.H || m.Code != last.Code {
-			if err := utils.WriteRec(bw, m); err != nil {
-				return err
-			}
-			last = m
-			have = true
+			lastRec = rec
+			hasLast = true
 		}
 	}
-	// bubble up read errors if any
-	for _, rr := range readers {
-		if rr.Err() != nil {
-			return rr.Err()
-		}
+
+	if err := <-errChan; err != nil {
+		return fmt.Errorf("external sort failed: %w", err)
 	}
+
 	return nil
 }
