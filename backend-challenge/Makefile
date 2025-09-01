@@ -22,6 +22,10 @@ preprocess:
 	@./scripts/bin.sh preprocess
 .PHONY: preprocess
 
+generate:
+	@./scripts/bin.sh generate
+.PHONY: generate
+
 help:
 	@./scripts/bin.sh help
 .PHONY: help
